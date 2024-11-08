@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Home Page</title>
+</head>
+<body>
+  <h1>Home Page</h1>
+  <p id="statusMessage">Loading...</p>
+  <button id="logoutButton">Logout</button>
+  <button id="profileButton">Get Profile</button> <!-- New button to fetch user profile -->
+  
+  <p id="profileData"></p> <!-- Placeholder to show profile data -->
+
+  <script>
+    // Add event listener for logout button
+    document.getElementById('logoutButton').addEventListener('click', async () => {
+      console.log("clicked logout button");
+      try {
+        const response = await fetch('/user/logout', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          console.log("removing token");
+          // Remove the token from local storage
+          localStorage.removeItem('token');
+          // Redirect to the login page
+          window.location.href = '/login';
+        } else {
+          const data = await response.json();
+          alert(data.message || 'Logout failed');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    });
+
+    // Add event listener for profile button
+    document.getElementById('profileButton').addEventListener('click', async () => {
+      console.log("clicked get profile button");
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          window.location.href = '/login'; // Redirect if no token
+          return;
+        }
+
+        const response = await fetch('/user/getUserProfile', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const profileData = await response.json(); // Assuming the response is JSON
+          document.getElementById('profileData').innerText = JSON.stringify(profileData, null, 2); // Display profile data
+        } else {
+          alert('Failed to fetch profile');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    });
+
+    // Fetch protected content
+    async function fetchHomePage() {
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        window.location.href = '/login'; // Redirect if no token
+        return;
+      }
+
+      try {
+        const response = await fetch('/home', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.text();
+          document.getElementById('statusMessage').innerText = "You are logged in"; // Update status
+        } else {
+          localStorage.removeItem('token');
+          window.location.href = '/login'; // Redirect on error
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        localStorage.removeItem('token');
+        window.location.href = '/login'; // Redirect on error
+      }
+    }
+
+    // Fetch the home page content when the page loads
+    fetchHomePage();
+  </script>
+</body>
+</html>
